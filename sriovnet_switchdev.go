@@ -226,6 +226,44 @@ func findNetdevWithPortNameCriteria(criteria func(string) bool) (string, error) 
 	return "", fmt.Errorf("no representor matched criteria")
 }
 
+// Finds the VF index of a port, if applicable
+func GetVfIndexFromNetDevice(netdev string) (int, error) {
+	if !isSwitchdev(netdev) {
+		return 0, fmt.Errorf("netdev %s is not an eswitch port", netdev)
+	}
+
+	physPortNameStr, err := getNetDevPhysPortName(netdev)
+	if err != nil {
+		return 0, fmt.Errorf("netdev %s has no physical backend", netdev)
+	}
+
+	_, vfRepIndex, err := parsePortName(physPortNameStr)
+	if err != nil {
+		return 0, fmt.Errorf("netdev %s is not a virtual function", netdev)
+	}
+
+	return vfRepIndex, nil
+}
+
+// Finds the SF index of a port, if applicable
+func GetSfIndexFromNetDevice(netdev string) (int, error) {
+	if !isSwitchdev(netdev) {
+		return 0, fmt.Errorf("netdev %s is not an eswitch port", netdev)
+	}
+
+	physPortNameStr, err := getNetDevPhysPortName(netdev)
+	if err != nil {
+		return 0, fmt.Errorf("netdev %s has no physical backend", netdev)
+	}
+
+	sfRepIndex, err := sfIndexFromPortName(physPortNameStr)
+	if err != nil {
+		return 0, fmt.Errorf("netdev %s is not a scalable function", netdev)
+	}
+
+	return sfRepIndex, nil
+}
+
 // GetVfRepresentorDPU returns VF representor on DPU for a host VF identified by pfID and vfIndex
 func GetVfRepresentorDPU(pfID, vfIndex string) (string, error) {
 	// TODO(Adrianc): This method should change to get switchID and vfIndex as input, then common logic can

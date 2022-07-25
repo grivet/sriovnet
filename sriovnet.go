@@ -453,3 +453,27 @@ func GetNetDevicesFromPci(pciAddress string) ([]string, error) {
 	pciDir := filepath.Join(PciSysDir, pciAddress, "net")
 	return getFileNamesFromPath(pciDir)
 }
+
+// Transform a netdevice name into its PCI address, if applicable.
+// Essentially doing:
+//   basename $(readlink -f $(readlink -f /sys/class/net/${name})/../..)
+func GetPciFromNetDevice(name string) (string, error) {
+	devPath := filepath.Join(NetSysDir, name)
+
+	realPath, err := utilfs.Fs.Readlink(devPath)
+	if err != nil {
+		return "", fmt.Errorf("device %s not found: %s", name, err)
+	}
+
+	if !strings.Contains(realPath, PciDevSysDir) {
+		return "", fmt.Errorf("device %s is not a PCI device", name)
+	}
+
+	pciDevPath := filepath.Join(realPath, "..", "..")
+	pci := filepath.Base(pciDevPath)
+	if pci == "" {
+		return "", fmt.Errorf("cannot resolve basename of %s", pciDevPath)
+	}
+
+	return pci, nil
+}

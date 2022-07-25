@@ -352,6 +352,134 @@ func TestGetSfRepresentorErrorNotExistingUplink(t *testing.T) {
 	assert.Contains(t, err.Error(), expectedError)
 }
 
+func TestGetVfIndexFromNetDevice(t *testing.T) {
+	vfReps := []*repContext{
+		{
+			Name:         "foo",
+			PhysPortName: "pf0vf0",
+			PhysSwitchID: "fc10d80003a1420c",
+		},
+		{
+			Name:         "bar",
+			PhysPortName: "pf0vf7",
+			PhysSwitchID: "fc10d80003a1420c",
+		},
+	}
+	teardown := setupRepresentorEnv(t, "", vfReps)
+	defer teardown()
+
+	vfID, err := GetVfIndexFromNetDevice("bar")
+	assert.NoError(t, err)
+	assert.Equal(t, 7, vfID)
+}
+
+func TestGetVfIndexFromNetDeviceNoPhysPort(t *testing.T) {
+	vfReps := []*repContext{
+		{
+			Name:         "eth0",
+			PhysPortName: "",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+	}
+	expectedError := "has no physical backend"
+	teardown := setupRepresentorEnv(t, "", vfReps)
+	defer teardown()
+
+	_, err := GetVfIndexFromNetDevice("eth0")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), expectedError)
+}
+
+func TestGetVfIndexFromNetDeviceNoVf(t *testing.T) {
+	sfReps := []*repContext{
+		{
+			Name:         "eth0",
+			PhysPortName: "pf0sf0",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+		{
+			Name:         "eth1",
+			PhysPortName: "pf0sf1",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+	}
+	expectedError := "is not a virtual function"
+	teardown := setupSfRepresentorEnv(t, sfReps)
+	defer teardown()
+
+	_, err := GetVfIndexFromNetDevice("eth1")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), expectedError)
+}
+
+func TestGetSfIndexFromNetDevice(t *testing.T) {
+	sfReps := []*repContext{
+		{
+			Name:         "foo",
+			PhysPortName: "pf0sf0",
+			PhysSwitchID: "fc10d80003a1420c",
+		},
+		{
+			Name:         "bar",
+			PhysPortName: "pf0sf7",
+			PhysSwitchID: "fc10d80003a1420c",
+		},
+	}
+	teardown := setupSfRepresentorEnv(t, sfReps)
+	defer teardown()
+
+	vfID, err := GetSfIndexFromNetDevice("bar")
+	assert.NoError(t, err)
+	assert.Equal(t, 7, vfID)
+}
+
+func TestGetSfIndexFromNetDeviceNoPhysPort(t *testing.T) {
+	sfReps := []*repContext{
+		{
+			Name:         "eth0",
+			PhysPortName: "",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+	}
+	expectedError := "has no physical backend"
+	teardown := setupSfRepresentorEnv(t, sfReps)
+	defer teardown()
+
+	_, err := GetSfIndexFromNetDevice("eth0")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), expectedError)
+}
+
+func TestGetSfIndexFromNetDeviceNoSf(t *testing.T) {
+	vfReps := []*repContext{
+		{
+			Name:         "eth0",
+			PhysPortName: "pf0vf0",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+		{
+			Name:         "eth1",
+			PhysPortName: "pf0vf1",
+			PhysSwitchID: "c2cfc60003a1420c",
+		},
+	}
+	expectedError := "is not a scalable function"
+	teardown := setupRepresentorEnv(t, "", vfReps)
+	defer teardown()
+
+	_, err := GetSfIndexFromNetDevice("eth1")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), expectedError)
+}
+
+func TestGetVfIndexFromNetDeviceInvalidNetdev(t *testing.T) {
+	expectedError := "netdev invalid is not an eswitch port"
+	vfID, err := GetVfIndexFromNetDevice("invalid")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), expectedError)
+	assert.Equal(t, 0, vfID)
+}
+
 func TestGetVfRepresentorDPUNoRep(t *testing.T) {
 	vfReps := []*repContext{
 		{
